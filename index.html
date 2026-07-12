@@ -653,7 +653,13 @@ Include quantities. Keep to what the week actually needs.`);
     mTasks[7].st='ok'; paintTasks();
 
     await persist();
-    renderPlan(); show('plan'); window.scrollTo(0,0);
+    try{ renderPlan(); show('plan'); window.scrollTo(0,0); }
+    catch(re){
+      console.error('render failed', re);
+      $('builderr').innerHTML = `<div class="errbox"><b>Plan built, but one section wouldn't display.</b>
+        <div style="margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--soft)">${re.message}</div>
+        <div style="margin-top:12px"><button class="cta" onclick="location.reload()">Reload</button></div></div>`;
+    }
 
   }catch(e){
     TASKS.forEach(t=>{ if(t.st==='run') t.st='err'; }); paintTasks();
@@ -717,14 +723,56 @@ $('go').onclick = ()=>{ show('q'); renderQ(); };
 $('redo').onclick = ()=>{ if(confirm('Start over? Your plan will be replaced.')){ qi=0; show('q'); renderQ(); } };
 
 /* ================= PLAN RENDER ================= */
+// Claude returns valid JSON but not always the exact shape we asked for.
+// These make the renderer accept any reasonable variant instead of throwing.
+function txt(v){
+  if(v==null) return '';
+  if(typeof v==='string'||typeof v==='number') return String(v);
+  if(Array.isArray(v)) return v.map(txt).filter(Boolean).join(' · ');
+  if(typeof v==='object'){
+    const vals = Object.entries(v).map(([k,x])=>{
+      const t = txt(x);
+      return (/^(name|item|food|desc|description|text|label)$/i.test(k)) ? t : (t ? `${t}` : '');
+    }).filter(Boolean);
+    return vals.join(' · ');
+  }
+  return String(v);
+}
+function arr(v){
+  if(v==null) return [];
+  if(Array.isArray(v)) return v;
+  if(typeof v==='string') return [v];
+  if(typeof v==='object') return Object.entries(v).map(([k,x])=>`${k}: ${txt(x)}`);
+  return [String(v)];
+}
+function row(ex){                       // one exercise, whatever shape it arrived in
+  if(Array.isArray(ex)) return {n:txt(ex[0]), r:txt(ex[1]), c:txt(ex[2]), key:!!ex[3]};
+  if(ex && typeof ex==='object') return {
+    n:   txt(ex.name ?? ex.exercise ?? ex[0]),
+    r:   txt(ex.reps ?? ex.sets ?? ex[1]),
+    c:   txt(ex.cue ?? ex.note ?? ex.notes ?? ex[2]),
+    key: !!(ex.key ?? ex.keyLift ?? ex[3])
+  };
+  return {n:txt(ex), r:'', c:'', key:false};
+}
+function mrow(m){                       // one meal
+  if(Array.isArray(m)) return {w:txt(m[0]), f:txt(m[1]), mac:txt(m[2]), key:!!m[3]};
+  if(m && typeof m==='object') return {
+    w:   txt(m.when ?? m.meal ?? m.name ?? m[0]),
+    f:   txt(m.food ?? m.description ?? m.items ?? m[1]),
+    mac: txt(m.macros ?? m.kcal ?? m[2]),
+    key: !!(m.key ?? m[3])
+  };
+  return {w:'', f:txt(m), mac:'', key:false};
+}
 function renderPlan(){
   const c = PLAN.core;
   $('p-head').textContent = c.headline;
   $('p-stats').innerHTML = [`<span><b>${c.kcal}</b> kcal/day</span>`,`<span><b>${c.protein}</b> protein</span>`]
-    .concat((c.stats||[]).map(s=>`<span>${s}</span>`)).join('');
+    .concat(arr(c.stats).map(x=>`<span>${txt(x)}</span>`)).join('');
   $('c-train').innerHTML = c.trainNote||'';
   $('c-food').innerHTML  = c.foodNote||'';
-  $('coach').innerHTML   = (c.coach||[]).map(x=>`<div class="callout">${x}</div>`).join('');
+  $('coach').innerHTML   = arr(c.coach).map(x=>`<div class="callout">${txt(x)}</div>`).join('');
   $('foot').textContent  = 'Weigh in 3–4 mornings a week. Only the weekly average means anything.';
 
   const venues = Object.keys(PLAN.workouts[Object.keys(PLAN.workouts)[0]]||{}).filter(k=>k==='gym'||k==='home');
@@ -740,7 +788,7 @@ function renderPlan(){
   }
   $('sec-shop').classList.toggle('hide', !PLAN.shopping);
   if(PLAN.shopping) $('shop').innerHTML = Object.entries(PLAN.shopping)
-    .map(([k,v])=>`<h4>${k}</h4><ul>${v.map(i=>`<li>${i}</li>`).join('')}</ul>`).join('');
+    .map(([k,v])=>`<h4>${txt(k)}</h4><ul>${arr(v).map(i=>`<li>${txt(i)}</li>`).join('')}</ul>`).join('');
   $('food-sub').textContent = `7 days · ~${c.kcal} kcal each`;
 
   renderStrip(); renderToday(); renderWorkouts(); renderMeals(); renderBoard(); renderLog();
@@ -758,7 +806,7 @@ function renderToday(){
   $('t-title').textContent = d.title;
   $('t-sub').textContent = d.sub||'';
   $('t-kcal').textContent = m ? m.kcal.toLocaleString('en-GB')+' kcal' : '—';
-  $('t-prot').textContent = m ? `${m.p} g protein · ${m.meals.length} meals` : '';
+  $('t-prot').textContent = m ? `${m.p} g protein · ${arr(m.meals).length} meals` : '';
 }
 function renderWorkouts(){
   const codes = Object.keys(PLAN.workouts);
@@ -766,16 +814,17 @@ function renderWorkouts(){
     const w = PLAN.workouts[code];
     const list = w[venue] || w.gym || w.home || [];
     const open = PLAN.core.week[sel].code === code;
-    const rows = list.map((ex,i)=>{
+    const rows = arr(list).map((raw,i)=>{
+      const ex = row(raw);
       const id = code+'-'+venue+'-'+i, done = checks[id];
       return `<tr class="${done?'done':''}">
         <td class="chk"><input type="checkbox" data-id="${id}" ${done?'checked':''}></td>
-        <td><b>${ex[0]}</b>${ex[3]?'<span class="keylift">Key lift</span>':''}</td>
-        <td class="reps">${ex[1]}</td><td class="note">${ex[2]||''}</td></tr>`;
+        <td><b>${ex.n}</b>${ex.key?'<span class="keylift">Key lift</span>':''}</td>
+        <td class="reps">${ex.r}</td><td class="note">${ex.c}</td></tr>`;
     }).join('');
     return `<div class="wk ${open?'open':''}">
       <button class="wkhead"><span class="code">${code}</span>
-        <span><span class="nm">${w.name}</span><br><span class="sub">${w.sub||''}</span></span>
+        <span><span class="nm">${txt(w.name)}</span><br><span class="sub">${txt(w.sub)}</span></span>
         <span class="chev">▶</span></button>
       <div class="wkbody"><table><thead><tr><th></th><th>Exercise</th><th>Sets × reps</th><th>Notes</th></tr></thead>
         <tbody>${rows}</tbody></table></div></div>`;
@@ -789,8 +838,10 @@ function renderWorkouts(){
 function renderMeals(){
   $('meals').innerHTML = PLAN.core.week.map((d,i)=>{
     const m = PLAN.meals[d.d]; if(!m) return '';
-    const rows = m.meals.map(x=>`<div class="meal ${x[3]?'key':''}">
-      <span class="when">${x[0]}</span><span class="what">${x[1]}</span><span class="macros">${x[2]}</span></div>`).join('');
+    const rows = arr(m.meals).map(raw=>{ const x = mrow(raw);
+      return `<div class="meal ${x.key?'key':''}">
+        <span class="when">${x.w}</span><span class="what">${x.f}</span><span class="macros">${x.mac}</span></div>`;
+    }).join('');
     return `<div class="mday ${i===sel?'open':''}"><button class="mdayhead">
         <span class="dcode">${d.d}</span><span>${d.type==='lift'?'Training day':d.type==='rest'?'Rest day':'Cardio / yoga'}</span>
         <span class="tot">${m.kcal.toLocaleString('en-GB')} kcal · ${m.p} g P</span></button>

@@ -507,17 +507,47 @@ async function persist(){
 const put = (k,v) => persist();
 
 /* ================= CLAUDE ================= */
-async function ask(system, user, tries=2){
+function repair(t){
+  // close a JSON string that got cut off mid-flight
+  t = t.replace(/,\s*$/, '');
+  let inStr=false, esc=false; const stack=[];
+  for(const ch of t){
+    if(esc){ esc=false; continue; }
+    if(ch==='\\'){ esc=true; continue; }
+    if(ch==='"'){ inStr=!inStr; continue; }
+    if(inStr) continue;
+    if(ch==='{'||ch==='[') stack.push(ch);
+    else if(ch==='}'||ch===']') stack.pop();
+  }
+  if(inStr) t += '"';
+  t = t.replace(/,\s*$/, '');
+  while(stack.length) t += stack.pop()==='{' ? '}' : ']';
+  return t;
+}
+
+async function ask(system, user, tries=3){
+  let lastErr;
   for(let i=0;i<tries;i++){
     try{
       const { data, error } = await sb.functions.invoke('claude', { body:{ system, user } });
-      if(error) throw error;
+      if(error) throw new Error(error.message || 'Function call failed');
       if(data && data.error) throw new Error(data.error);
+
       let t = (data.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("");
+      if(!t) throw new Error('Empty reply');
       t = t.replace(/^[\s\S]*?(?=[\{\[])/, "").replace(/```/g,"").trim();
-      return JSON.parse(t);
-    }catch(e){ if(i===tries-1) throw e; }
+
+      try{ return JSON.parse(t); }
+      catch(_){
+        console.warn('Truncated JSON, repairing. stop_reason:', data.stop_reason);
+        return JSON.parse(repair(t));      // salvage a cut-off response
+      }
+    }catch(e){
+      lastErr = e;
+      console.error('ask() attempt', i+1, e);
+    }
   }
+  throw lastErr;
 }
 const SYS = `You are a certified strength coach and registered nutritionist. You are precise, warm and direct — you tell people what will actually work, not what they want to hear.
 
@@ -550,7 +580,7 @@ async function generate(){
 
   try{
     tCore.st='run'; paintTasks();
-    PLAN.core = await ask(SYS, `${PROFILE()}
+    if(!PLAN.core) PLAN.core = await ask(SYS, `${PROFILE()}
 
 Return JSON:
 {"headline":"49 → 55 KG",           // 3-5 words, uppercase, the goal in a phrase
@@ -572,11 +602,12 @@ Their non-lifting activities must appear in the week. Respect their available da
     if(!venues.length) venues.push('gym');
 
     const wTasks = codes.map(c=>task(`Writing session ${c}`));
-    const mTasks = [task('Planning food, Mon–Thu'), task('Planning food, Fri–Sun'), task('Building your shopping list')];
+    const mTasks = PLAN.core.week.map(d=>task('Planning food · '+d.d)).concat([task('Building your shopping list')]);
     paintTasks();
 
     for(let i=0;i<codes.length;i++){
       const c = codes[i], meta = PLAN.core.week.find(d=>d.code===c);
+      if(PLAN.workouts[c]){ wTasks[i].st='ok'; paintTasks(); continue; }
       wTasks[i].st='run'; paintTasks();
       PLAN.workouts[c] = await ask(SYS, `${PROFILE()}
 
@@ -591,23 +622,26 @@ Last value 1 = the one key lift of the session (exactly one per version), else 0
     }
 
     const days = PLAN.core.week.map(d=>d.d);
-    for(const [gi,grp] of [[0,days.slice(0,4)],[1,days.slice(4)]]){
+    for(let gi=0; gi<days.length; gi++){
+      const d = days[gi];
+      if(PLAN.meals[d]) { mTasks[gi].st='ok'; paintTasks(); continue; }   // already done, don't re-bill
       mTasks[gi].st='run'; paintTasks();
       const part = await ask(SYS, `${PROFILE()}
 
 Daily target: ${PLAN.core.kcal} kcal, ${PLAN.core.protein} protein.
-Write food for these days: ${grp.join(', ')}.
-Week context: ${PLAN.core.week.map(d=>d.d+'='+d.short).join(', ')} — put more carbs on lifting days.
+Write food for ONE day: ${d} (${PLAN.core.week[gi].short}).
 ${A.kitchen&&A.kitchen.fixed?`They eat this EVERY day, build around it: ${A.kitchen.fixed}`:''}
-Real products from their country. Give amounts in grams/ml.
+Real products from their country. Amounts in grams/ml. Each meal description UNDER 15 words.
 
-Return JSON: {"Mon":{"kcal":2340,"p":121,"meals":[["Breakfast","60 g oats in 250 ml whole milk, 1 tbsp peanut butter, banana","620 kcal · 23 g",0], ...4-5 meals]}, ...}
-Last value 1 = highlight this row (their daily fixed item, or the day's most important meal), else 0. Totals must land within 60 kcal of target.`);
+Return JSON, one key, nothing else:
+{"${d}":{"kcal":${PLAN.core.kcal},"p":115,"meals":[["Breakfast","60 g oats, 250 ml whole milk, 1 tbsp peanut butter, banana","620 kcal · 23 g",0],["Lunch","...","...",0],["Snack","...","...",0],["Dinner","...","...",0]]}}
+4-5 meals. Last value 1 = highlight (their daily fixed item), else 0. Total within 60 kcal of target.`);
       Object.assign(PLAN.meals, part);
+      await persist();
       mTasks[gi].st='ok'; paintTasks();
     }
 
-    mTasks[2].st='run'; paintTasks();
+    mTasks[7].st='run'; paintTasks();
     PLAN.shopping = await ask(SYS, `${PROFILE()}
 
 Here is their week of food:
@@ -616,7 +650,7 @@ ${JSON.stringify(PLAN.meals).slice(0,2200)}
 Return a one-week shopping list as JSON, grouped, using the names printed on packaging in their country.
 {"Protein":["..."],"Carbs":["..."],"Fats — the aisle that matters":["..."],"Fruit & veg":["..."],"Extras":["..."]}
 Include quantities. Keep to what the week actually needs.`);
-    mTasks[2].st='ok'; paintTasks();
+    mTasks[7].st='ok'; paintTasks();
 
     await persist();
     renderPlan(); show('plan'); window.scrollTo(0,0);
@@ -624,7 +658,8 @@ Include quantities. Keep to what the week actually needs.`);
   }catch(e){
     TASKS.forEach(t=>{ if(t.st==='run') t.st='err'; }); paintTasks();
     $('builderr').innerHTML = `<div class="errbox"><b>That didn't come back cleanly.</b><br>
-      ${PLAN.core ? 'Your calories and week are done — the rest stalled.' : 'Nothing came through.'}
+      ${PLAN.core ? 'Finished pieces are saved — Try again picks up where it stopped.' : 'Nothing came through.'}
+      <div style="margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--soft)">${(e&&e.message)||e}</div>
       <div style="margin-top:12px"><button class="cta" onclick="generate()">Try again</button></div></div>`;
   }
 }

@@ -1,0 +1,823 @@
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --paper:#EDEDE9; --card:#FFFFFF; --ink:#14171A; --soft:#6A706C; --rule:#DFDFD8;
+    --lift:#17324D; --food:#54662F; --mark:#E8C547; --rest:#A6ABA4; --bad:#B03A2E;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:15px;line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .sheet{max-width:940px;margin:0 auto;padding:0 16px 90px;}
+  .mono{font-family:"IBM Plex Mono",monospace;}
+  h1,h2,h3{font-family:"Big Shoulders Display",sans-serif;text-transform:uppercase;margin:0;}
+  button{font:inherit;cursor:pointer;}
+  :focus-visible{outline:2.5px solid var(--lift);outline-offset:2px;}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
+
+  /* ============ INTRO ============ */
+  .intro{min-height:78vh;display:flex;flex-direction:column;justify-content:center;padding:40px 0;}
+  .kick{
+    font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--soft);margin-bottom:14px;
+  }
+  .intro h1{font-size:clamp(52px,12vw,110px);font-weight:800;line-height:.86;letter-spacing:-.015em;}
+  .intro h1 em{font-style:normal;color:var(--lift);}
+  .intro p{max-width:46ch;font-size:17px;color:var(--soft);margin:22px 0 0;}
+  .steps3{display:flex;gap:26px;margin:34px 0 38px;flex-wrap:wrap;}
+  .s3{display:flex;gap:10px;align-items:flex-start;max-width:200px;}
+  .s3 span{
+    font-family:"Big Shoulders Display",sans-serif;font-weight:800;font-size:26px;
+    color:var(--lift);line-height:1;
+  }
+  .s3 p{margin:0;font-size:13.5px;color:var(--soft);}
+  .cta{
+    background:var(--ink);color:var(--paper);border:2px solid var(--ink);
+    font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.14em;
+    text-transform:uppercase;padding:15px 30px;align-self:flex-start;
+  }
+  .cta:hover{background:var(--lift);border-color:var(--lift);}
+  .cta.ghost{background:none;color:var(--ink);}
+  .cta.ghost:hover{background:var(--ink);color:var(--paper);}
+  .cta:disabled{opacity:.35;cursor:not-allowed;}
+
+  /* ============ AUTH ============ */
+  .auth{min-height:80vh;display:flex;flex-direction:column;justify-content:center;max-width:400px;}
+  .auth h2{font-size:40px;font-weight:800;margin-bottom:6px;}
+  .auth .lead{color:var(--soft);margin:0 0 26px;}
+  .auth .fld{margin-bottom:12px;}
+  .auth .cta{width:100%;text-align:center;align-self:stretch;justify-content:center;}
+  .swap{background:none;border:none;color:var(--soft);font-size:13.5px;margin-top:18px;text-decoration:underline;padding:0;}
+  .swap b{color:var(--ink);}
+  .msg{padding:11px 13px;border-left:4px solid var(--bad);background:var(--card);font-size:13.5px;margin-bottom:16px;}
+  .msg.ok{border-color:var(--food);}
+  .who{
+    display:flex;align-items:center;gap:10px;padding:10px 0;
+    font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--soft);
+  }
+  .who button{background:none;border:none;color:var(--soft);text-decoration:underline;font-size:11px;padding:0;}
+  .who button:hover{color:var(--ink);}
+
+  /* ============ QUESTIONNAIRE ============ */
+  .qwrap{min-height:80vh;display:flex;flex-direction:column;padding-top:34px;}
+  .bar{height:3px;background:var(--rule);margin-bottom:34px;}
+  .bar i{display:block;height:100%;background:var(--lift);transition:width .3s;}
+  .qcount{
+    font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--soft);margin-bottom:10px;
+  }
+  .qtext{font-size:clamp(28px,5vw,42px);font-weight:800;line-height:1.02;
+    font-family:"Big Shoulders Display",sans-serif;text-transform:uppercase;max-width:20ch;}
+  .qhelp{color:var(--soft);font-size:14.5px;margin:12px 0 0;max-width:52ch;}
+  .opts{display:grid;gap:9px;margin:30px 0;max-width:600px;}
+  .opt{
+    display:flex;align-items:center;gap:13px;text-align:left;background:var(--card);
+    border:1.5px solid var(--rule);padding:15px 16px;color:var(--ink);
+    transition:border-color .12s,background .12s;
+  }
+  .opt:hover{border-color:var(--ink);}
+  .opt .bx{
+    width:17px;height:17px;border:1.5px solid var(--soft);flex:none;position:relative;
+  }
+  .opt.multi .bx{border-radius:0;}
+  .opt.on{border-color:var(--lift);background:#F4F7FA;}
+  .opt.on .bx{background:var(--lift);border-color:var(--lift);}
+  .opt.on .bx:after{
+    content:"";position:absolute;left:4.5px;top:1px;width:4px;height:9px;
+    border:solid #fff;border-width:0 2px 2px 0;transform:rotate(42deg);
+  }
+  .fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:30px 0;max-width:600px;}
+  .fld label{
+    display:block;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--soft);margin-bottom:5px;
+  }
+  .fld input, .tarea{
+    width:100%;background:var(--card);border:1.5px solid var(--rule);padding:12px 13px;
+    font-family:"IBM Plex Mono",monospace;font-size:15px;color:var(--ink);
+  }
+  .tarea{font-family:"IBM Plex Sans",sans-serif;min-height:86px;resize:vertical;max-width:600px;margin:30px 0;display:block;}
+  .fld input:focus,.tarea:focus{border-color:var(--lift);outline:none;}
+  .qnav{display:flex;gap:10px;margin-top:auto;padding-top:20px;}
+  .skip{background:none;border:none;color:var(--soft);font-size:13px;text-decoration:underline;padding:15px 4px;}
+
+  /* ============ BUILDING ============ */
+  .build{min-height:80vh;display:flex;flex-direction:column;justify-content:center;}
+  .build h2{font-size:44px;font-weight:800;margin-bottom:26px;}
+  .tasks{max-width:520px;}
+  .task{
+    display:flex;align-items:center;gap:13px;padding:12px 0;border-bottom:1px solid var(--rule);
+    font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--rule);
+  }
+  .task .st{width:15px;flex:none;text-align:center;}
+  .task.run{color:var(--ink);}
+  .task.run .st{color:var(--lift);animation:pulse 1s infinite;}
+  .task.ok{color:var(--soft);}
+  .task.ok .st{color:var(--food);}
+  .task.err .st{color:var(--bad);}
+  @keyframes pulse{50%{opacity:.25;}}
+  .errbox{
+    border-left:5px solid var(--bad);background:var(--card);padding:14px 16px;margin-top:24px;
+    font-size:14px;max-width:560px;
+  }
+
+  /* ============ PLAN ============ */
+  .masthead{padding:30px 0 16px;border-bottom:2px solid var(--ink);display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;}
+  .masthead h1{font-size:clamp(40px,9vw,72px);font-weight:800;line-height:.88;}
+  .masthead .redo{margin-left:auto;border:1.5px solid var(--rule);background:none;color:var(--soft);
+    font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:8px 13px;}
+  .masthead .redo:hover{border-color:var(--ink);color:var(--ink);}
+  .stats{display:flex;flex-wrap:wrap;gap:9px 24px;margin-top:14px;
+    font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--soft);}
+  .stats b{color:var(--ink);font-weight:600;}
+
+  .weekstrip{display:grid;grid-template-columns:repeat(7,1fr);border:2px solid var(--ink);border-top:none;background:var(--card);}
+  .daycell{border-right:1px solid var(--rule);padding:9px 3px 10px;text-align:center;background:none;
+    color:inherit;display:flex;flex-direction:column;gap:3px;align-items:center;border-top:none;border-bottom:none;border-left:none;}
+  .daycell:last-child{border-right:none;}
+  .daycell:hover{background:#FAFAF8;}
+  .daycell .dn{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);}
+  .daycell .dt{font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:16px;line-height:1;text-transform:uppercase;}
+  .dot{width:6px;height:6px;border-radius:50%;}
+  .dot.lift{background:var(--lift);} .dot.cardio{background:var(--food);} .dot.rest{background:var(--rest);}
+  .daycell[aria-current="true"]{background:var(--mark);}
+  .daycell.sel{box-shadow:inset 0 -4px 0 var(--ink);}
+
+  .today{border:2px solid var(--ink);border-top:none;background:var(--card);display:grid;grid-template-columns:1.15fr .85fr;}
+  @media(max-width:680px){.today{grid-template-columns:1fr;}}
+  .today>div{padding:20px;}
+  .today .tl{border-right:1px solid var(--rule);}
+  @media(max-width:680px){.today .tl{border-right:none;border-bottom:1px solid var(--rule);}}
+  .tag{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.14em;
+    text-transform:uppercase;padding:3px 7px;color:#fff;}
+  .tag.lift{background:var(--lift);} .tag.food{background:var(--food);}
+  .today h2{font-size:32px;font-weight:700;margin:10px 0 4px;}
+  .today p{margin:0;color:var(--soft);font-size:14px;}
+  .kcal{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:29px;margin:10px 0 2px;}
+  .toggle{display:inline-flex;border:1.5px solid var(--ink);margin-top:14px;}
+  .toggle button{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    padding:7px 14px;border:none;background:none;color:var(--ink);}
+  .toggle button[aria-pressed="true"]{background:var(--ink);color:var(--paper);}
+
+  section{margin-top:44px;}
+  .shead{display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--ink);padding-bottom:6px;}
+  .shead h2{font-size:29px;font-weight:800;line-height:1;}
+  .shead span{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--soft);
+    letter-spacing:.08em;margin-left:auto;text-transform:uppercase;}
+
+  .wk{border:1px solid var(--rule);border-top:none;background:var(--card);}
+  .wk:first-of-type{border-top:1px solid var(--rule);}
+  .wkhead{width:100%;display:flex;align-items:center;gap:12px;padding:13px 14px;background:none;
+    border:none;border-left:5px solid var(--lift);text-align:left;color:inherit;}
+  .wkhead:hover{background:#FAFAF8;}
+  .wkhead .code{font-family:"Big Shoulders Display",sans-serif;font-weight:800;font-size:25px;color:var(--lift);min-width:24px;line-height:1;}
+  .wkhead .nm{font-weight:600;} .wkhead .sub{font-size:12.5px;color:var(--soft);}
+  .chev{margin-left:auto;font-family:"IBM Plex Mono",monospace;color:var(--soft);font-size:13px;
+    display:inline-block;transition:transform .15s;}
+  .wkbody{display:none;padding:0 14px 16px;}
+  .wk.open .wkbody{display:block;} .wk.open .chev{transform:rotate(90deg);}
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th{text-align:left;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--soft);font-weight:500;padding:8px 6px;border-bottom:1px solid var(--rule);}
+  td{padding:9px 6px;border-bottom:1px solid var(--rule);vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  td.reps{font-family:"IBM Plex Mono",monospace;font-weight:600;white-space:nowrap;}
+  td.note{color:var(--soft);font-size:13px;} td.chk{width:26px;}
+  input[type=checkbox]{width:17px;height:17px;accent-color:var(--lift);margin-top:2px;}
+  tr.done td:not(.chk){opacity:.42;text-decoration:line-through;}
+  .keylift{background:var(--mark);color:#000;font-family:"IBM Plex Mono",monospace;font-size:9px;
+    letter-spacing:.1em;padding:2px 5px;margin-left:6px;text-transform:uppercase;white-space:nowrap;}
+
+  .mealwrap{border:1px solid var(--rule);border-top:none;background:var(--card);}
+  .mday{border-top:1px solid var(--rule);}
+  .mdayhead{width:100%;display:flex;align-items:center;gap:12px;padding:13px 14px;background:none;
+    border:none;border-left:5px solid var(--food);text-align:left;color:inherit;}
+  .mdayhead:hover{background:#FAFAF8;}
+  .mdayhead .dcode{font-family:"Big Shoulders Display",sans-serif;font-weight:800;font-size:21px;
+    color:var(--food);text-transform:uppercase;min-width:44px;line-height:1;}
+  .mdayhead .tot{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--soft);}
+  .mbody{display:none;padding:0 14px 16px;} .mday.open .mbody{display:block;}
+  .meal{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--rule);}
+  .meal:last-child{border-bottom:none;}
+  .meal .when{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--soft);min-width:76px;padding-top:2px;}
+  .meal .what{flex:1;} .meal .macros{font-family:"IBM Plex Mono",monospace;font-size:12px;
+    color:var(--soft);text-align:right;min-width:94px;white-space:nowrap;}
+  .meal.key{background:#F4F7EF;margin:0 -14px;padding:11px 14px;} .meal.key .what{font-weight:600;}
+
+  .board{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--ink);border:2px solid var(--ink);}
+  @media(max-width:640px){.board{grid-template-columns:1fr;}}
+  .pm{background:var(--card);padding:20px;}
+  .pm-name{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);}
+  .pm-row{display:flex;align-items:baseline;gap:8px;margin:6px 0 16px;}
+  .pm-now{font-family:"Big Shoulders Display",sans-serif;font-weight:800;font-size:50px;line-height:.82;}
+  .pm-unit{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--soft);}
+  .pm-goal{margin-left:auto;font-family:"Big Shoulders Display",sans-serif;font-weight:700;font-size:25px;line-height:1;color:var(--rule);text-align:right;}
+  .pm-goal small{display:block;font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.14em;
+    color:var(--soft);text-transform:uppercase;margin-bottom:2px;font-weight:400;}
+  .slots{display:flex;gap:4px;height:30px;}
+  .slot{flex:1;border:1.5px solid var(--ink);position:relative;overflow:hidden;}
+  .slot i{position:absolute;left:0;top:0;bottom:0;background:var(--lift);}
+  .pm.budget .slot i{background:var(--mark);}
+  .pm-cap{margin-top:10px;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--soft);}
+  .pm-cap b{color:var(--ink);font-weight:600;}
+  .pm.budget .pm-cap b{color:#8a6d00;}
+
+  .log{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;}
+  .log input{font-family:"IBM Plex Mono",monospace;font-size:14px;padding:9px 11px;
+    border:1.5px solid var(--ink);background:var(--card);width:110px;}
+  .log button{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    padding:9px 17px;border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);}
+  .logout{margin-top:16px;}
+  .lrow{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--card);
+    border:1px solid var(--rule);margin-bottom:-1px;font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--soft);}
+  .lrow .ld{color:var(--ink);font-weight:600;min-width:60px;} .lrow .lv{flex:1;} .lrow .lv b{color:var(--ink);font-weight:500;}
+  .del{border:1px solid var(--rule);background:none;color:var(--soft);font-family:"IBM Plex Mono",monospace;
+    font-size:11px;padding:3px 9px;}
+  .del:hover{background:var(--bad);border-color:var(--bad);color:#fff;}
+  .lempty{padding:14px 12px;background:var(--card);border:1px dashed var(--rule);
+    font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--soft);}
+
+  .shop{columns:2;column-gap:26px;}
+  @media(max-width:560px){.shop{columns:1;}}
+  .shop h4{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--food);margin:16px 0 6px;break-after:avoid;}
+  .shop ul{margin:0;padding:0;list-style:none;break-inside:avoid;}
+  .shop li{font-size:13.5px;padding:3px 0 3px 16px;position:relative;}
+  .shop li:before{content:"";position:absolute;left:0;top:9px;width:6px;height:6px;border:1px solid var(--soft);}
+
+  .callout{border-left:5px solid var(--mark);background:var(--card);padding:14px 16px;margin-top:14px;font-size:14px;}
+  .hide{display:none;}
+  footer{margin-top:52px;padding-top:14px;border-top:2px solid var(--ink);
+    font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--soft);}
+</style>
+
+<div class="sheet">
+
+  <!-- ===== AUTH ===== -->
+  <div id="v-auth" class="auth hide">
+    <p class="kick">Strength &amp; nutrition planner</p>
+    <h2 id="a-title">Create an account</h2>
+    <p class="lead" id="a-lead">So your plan is here when you come back.</p>
+    <div id="a-msg"></div>
+    <div class="fld"><label>Email</label><input id="a-mail" type="email" autocomplete="email" placeholder="you@example.com"></div>
+    <div class="fld"><label>Password</label><input id="a-pass" type="password" autocomplete="current-password" placeholder="at least 8 characters"></div>
+    <button class="cta" id="a-go" style="margin-top:8px">Create account</button>
+    <button class="swap" id="a-swap">Already have an account? <b>Log in</b></button>
+  </div>
+
+  <!-- ===== INTRO ===== -->
+  <div id="v-intro" class="intro hide">
+    <div class="who" id="who"></div>
+    <p class="kick">Strength &amp; nutrition planner</p>
+    <h1>Answer<br>twelve<br><em>questions.</em></h1>
+    <p>Then Claude writes you a training program and a full week of food — built around your goal, your equipment, your appetite and the shops you actually walk into.</p>
+    <div class="steps3">
+      <div class="s3"><span>1</span><p>You answer. One question at a time, like a real intake.</p></div>
+      <div class="s3"><span>2</span><p>Claude does the maths and writes the plan.</p></div>
+      <div class="s3"><span>3</span><p>You get a page you can train and shop from.</p></div>
+    </div>
+    <button class="cta" id="go">Start</button>
+    <button class="cta ghost hide" id="resume" style="margin-top:10px">Open my saved plan</button>
+  </div>
+
+  <!-- ===== QUESTIONNAIRE ===== -->
+  <div id="v-q" class="qwrap hide">
+    <div class="bar"><i id="bar" style="width:0"></i></div>
+    <p class="qcount" id="qcount"></p>
+    <h2 class="qtext" id="qtext"></h2>
+    <p class="qhelp" id="qhelp"></p>
+    <div id="qbody"></div>
+    <div class="qnav">
+      <button class="cta ghost" id="back">Back</button>
+      <button class="cta" id="next">Next</button>
+      <button class="skip hide" id="skip">Skip this</button>
+    </div>
+  </div>
+
+  <!-- ===== BUILDING ===== -->
+  <div id="v-build" class="build hide">
+    <h2>Building your plan</h2>
+    <div class="tasks" id="tasks"></div>
+    <div id="builderr"></div>
+  </div>
+
+  <!-- ===== PLAN ===== -->
+  <div id="v-plan" class="hide">
+    <header class="masthead">
+      <h1 id="p-head">—</h1>
+      <button class="redo" id="redo">Start over</button>
+    </header>
+    <div class="stats" id="p-stats"></div>
+
+    <nav class="weekstrip" id="strip"></nav>
+    <div class="today">
+      <div class="tl">
+        <span class="tag lift">Today · Training</span>
+        <h2 id="t-title">—</h2>
+        <p id="t-sub">—</p>
+        <div class="toggle hide" id="venue">
+          <button data-v="gym" aria-pressed="true">Gym</button>
+          <button data-v="home" aria-pressed="false">Home</button>
+        </div>
+      </div>
+      <div>
+        <span class="tag food">Today · Food</span>
+        <div class="kcal" id="t-kcal">—</div>
+        <p id="t-prot">—</p>
+      </div>
+    </div>
+
+    <section>
+      <div class="shead"><h2>Training</h2><span id="venue-label">Gym version</span></div>
+      <div id="workouts"></div>
+      <div class="callout" id="c-train"></div>
+    </section>
+
+    <section>
+      <div class="shead"><h2>Food</h2><span id="food-sub"></span></div>
+      <div class="mealwrap" id="meals"></div>
+      <div class="callout" id="c-food"></div>
+    </section>
+
+    <section id="sec-prog">
+      <div class="shead"><h2>Progress</h2><span>Re-measure every 4 weeks</span></div>
+      <div class="board" id="board"></div>
+      <div class="log" id="loginputs"></div>
+      <div class="logout" id="logout"></div>
+    </section>
+
+    <section id="sec-shop">
+      <div class="shead"><h2>Shopping list</h2><span>One week</span></div>
+      <div class="shop" id="shop"></div>
+    </section>
+
+    <section>
+      <div class="shead"><h2>From your coach</h2><span>Read once</span></div>
+      <div id="coach"></div>
+    </section>
+
+    <footer id="foot"></footer>
+  </div>
+</div>
+
+<script>
+/* ================= QUESTIONS ================= */
+const Q = [
+  {id:'goal', type:'single', q:'What are you training for?',
+   help:'This decides everything downstream — calories, rep ranges, how fast we move.',
+   options:['Build muscle & get stronger','Lose fat / lean out','General health & fitness','Athletic performance / endurance']},
+
+  {id:'level', type:'single', q:'How much lifting have you done?',
+   help:'Be honest. An overestimate here gets you a program you can\'t recover from.',
+   options:['Beginner — under 6 months','Novice — 6–18 months','Intermediate — 1.5–4 years','Advanced — 4+ years']},
+
+  {id:'body', type:'fields', q:'The numbers',
+   help:'Used to calculate your metabolic rate and calorie target.',
+   fields:[{k:'sex',l:'Sex',t:'text',ph:'female / male'},{k:'age',l:'Age',t:'number',ph:'29'},
+           {k:'height',l:'Height (cm)',t:'number',ph:'165'},{k:'weight',l:'Weight (kg)',t:'number',ph:'49'},
+           {k:'target',l:'Target weight (kg)',t:'number',ph:'55'}]},
+
+  {id:'focus', type:'multi', q:'Which parts matter most to you?',
+   help:'Pick one or two. Picking everything means prioritising nothing.',
+   options:['Legs & glutes','Back & shoulders','Chest & arms','Core','Whole body evenly']},
+
+  {id:'days', type:'single', q:'How many days can you lift?',
+   help:'Realistically. The plan you actually follow beats the plan that looks good.',
+   options:['2 days','3 days','4 days','5–6 days']},
+
+  {id:'length', type:'single', q:'How long is a session?',
+   help:'Shorter sessions just mean tighter supersets, not worse results.',
+   options:['30–40 min','45–60 min','60–75 min','75+ min']},
+
+  {id:'where', type:'multi', q:'Where will you train?',
+   help:'Pick both and you get two versions of every session — choose day by day.',
+   options:['At a gym','At home']},
+
+  {id:'kit', type:'multi', q:'What do you have at home?',
+   help:'Skip if you only train at a gym.',
+   options:['Nothing — bodyweight only','Resistance bands','Dumbbells or kettlebells','Barbell &/or bench','Pull-up bar'], skippable:true},
+
+  {id:'cardio', type:'text', q:'What else do you do each week?',
+   help:'Running, yoga, swimming, football — and how often. It changes your calorie burn and your recovery.',
+   ph:'e.g. 2 easy runs, 1 yoga class. Or: nothing else.', skippable:true},
+
+  {id:'diet', type:'single', q:'How do you eat?',
+   options:['I eat everything','Vegetarian','Vegan','Pescatarian / mostly plants']},
+
+  {id:'appetite', type:'single', q:'How is your appetite?',
+   help:'This is the question most plans skip, and it\'s the one that decides whether you succeed.',
+   options:['Big — eating more is easy','Average — I can push a bit','Small — I fill up fast','I often forget or skip meals']},
+
+  {id:'kitchen', type:'fields', q:'Kitchen & shops',
+   help:'So the food is stuff you\'ll actually find and actually make.',
+   fields:[{k:'country',l:'Country / city',t:'text',ph:'Germany'},
+           {k:'cook',l:'How much do you cook?',t:'text',ph:'most meals / a little / rarely'},
+           {k:'fixed',l:'Anything you eat daily?',t:'text',ph:'e.g. yfood shake each afternoon'}]},
+
+  {id:'avoid', type:'text', q:'Anything to avoid?',
+   help:'Allergies, intolerances, foods you won\'t eat. Also injuries, joint pain or conditions I should train around.',
+   ph:'e.g. no dairy, bad left knee. Or: nothing.', skippable:true},
+
+  {id:'measure', type:'fields', q:'Measurements',
+   help:'Optional — but far more useful than the scale. Leave blank if you haven\'t got a tape.',
+   fields:[{k:'hip',l:'Hip (cm)',t:'number'},{k:'thigh',l:'Thigh (cm)',t:'number'},
+           {k:'waist',l:'Waist (cm)',t:'number'},{k:'chest',l:'Chest (cm)',t:'number'},
+           {k:'arm',l:'Upper arm (cm)',t:'number'}], skippable:true}
+];
+
+/* ================= CONFIG =================
+   Both of these are PUBLIC by design — safe to commit to GitHub.
+   Your Anthropic key is NOT here. It lives only in the Supabase function. */
+const SUPABASE_URL      = "https://xrmmasqedlnlipyeeohm.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_C1YlgWr6quKlYXCpuIHnZw_8_d3RVnh";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ================= STATE ================= */
+let qi = 0;
+const A = {};
+let PLAN = {core:null, workouts:{}, meals:{}, shopping:null};
+let sel = (new Date().getDay()+6)%7, venue='gym', checks={}, logs=[];
+let USER = null, ROW = null, mode = 'signup';
+const $ = id => document.getElementById(id);
+const show = v => ['auth','intro','q','build','plan'].forEach(x=>$('v-'+x).classList.toggle('hide', x!==v));
+
+/* ================= AUTH ================= */
+function msg(text, ok){ $('a-msg').innerHTML = text ? `<div class="msg ${ok?'ok':''}">${text}</div>` : ''; }
+
+$('a-swap').onclick = ()=>{
+  mode = mode==='signup' ? 'login' : 'signup';
+  $('a-title').textContent = mode==='signup' ? 'Create an account' : 'Welcome back';
+  $('a-lead').textContent  = mode==='signup' ? 'So your plan is here when you come back.' : 'Log in to pick up where you left off.';
+  $('a-go').textContent    = mode==='signup' ? 'Create account' : 'Log in';
+  $('a-swap').innerHTML    = mode==='signup' ? 'Already have an account? <b>Log in</b>' : 'No account yet? <b>Sign up</b>';
+  msg('');
+};
+
+$('a-go').onclick = async ()=>{
+  const email = $('a-mail').value.trim(), password = $('a-pass').value;
+  if(!email || password.length < 8){ msg('Enter an email and a password of at least 8 characters.'); return; }
+  $('a-go').disabled = true; msg('');
+  const fn = mode==='signup' ? sb.auth.signUp : sb.auth.signInWithPassword;
+  const { data, error } = await fn.call(sb.auth, { email, password });
+  $('a-go').disabled = false;
+  if(error){ msg(error.message); return; }
+  if(mode==='signup' && !data.session){
+    msg('Check your inbox and click the confirmation link, then log in.', true);
+    return;
+  }
+  await onSignedIn(data.user);
+};
+
+async function onSignedIn(user){
+  USER = user;
+  $('who').innerHTML = `<span>Signed in as ${user.email}</span><button id="out">Sign out</button>`;
+  $('out').onclick = async ()=>{ await sb.auth.signOut(); location.reload(); };
+
+  const { data } = await sb.from('plans').select('*').eq('user_id', user.id).maybeSingle();
+  if(data && data.plan && data.plan.core){
+    ROW = data;
+    PLAN   = data.plan;
+    checks = data.checks || {};
+    logs   = data.logs   || [];
+    Object.assign(A, data.answers || {});
+    $('resume').classList.remove('hide');
+    $('resume').onclick = ()=>{ renderPlan(); show('plan'); };
+  }
+  show('intro');
+}
+
+/* ================= PERSISTENCE ================= */
+let saveTimer;
+async function persist(){
+  if(!USER) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async ()=>{
+    await sb.from('plans').upsert({
+      user_id: USER.id, answers: A, plan: PLAN, checks, logs, updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+  }, 500);
+}
+const put = (k,v) => persist();
+
+/* ================= CLAUDE ================= */
+async function ask(system, user, tries=2){
+  for(let i=0;i<tries;i++){
+    try{
+      const { data, error } = await sb.functions.invoke('claude', { body:{ system, user } });
+      if(error) throw error;
+      if(data && data.error) throw new Error(data.error);
+      let t = (data.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("");
+      t = t.replace(/^[\s\S]*?(?=[\{\[])/, "").replace(/```/g,"").trim();
+      return JSON.parse(t);
+    }catch(e){ if(i===tries-1) throw e; }
+  }
+}
+const SYS = `You are a certified strength coach and registered nutritionist. You are precise, warm and direct — you tell people what will actually work, not what they want to hear.
+
+Rules:
+- Reply with ONE valid JSON object and nothing else. No prose, no markdown fences.
+- Use Mifflin-St Jeor for BMR, then an activity multiplier, then a sensible surplus/deficit.
+- Rate of change must be safe: max ~0.3-0.4 kg/week gain, max ~0.5-0.75% bodyweight/week loss.
+- SAFETY: if the person's target would put them under a healthy BMI (~18.5), or the requested change is unsafe or too fast, DO NOT follow it. Set a healthy target instead and say plainly why in the coach notes. Never build a plan that facilitates undereating or disordered eating.
+- Ground food in the person's country and supermarkets. Use local product names.
+- If their appetite is small and they need a surplus, prioritise calorie-dense, low-volume food and liquid calories.`;
+
+const PROFILE = () => `PERSON:
+${Object.entries(A).map(([k,v])=>`${k}: ${typeof v==='object'?JSON.stringify(v):v}`).join("\n")}`;
+
+/* ================= BUILD PIPELINE ================= */
+const TASKS = [];
+function task(label){ const t={label,st:'wait'}; TASKS.push(t); return t; }
+function paintTasks(){
+  $('tasks').innerHTML = TASKS.map(t=>{
+    const cls = t.st==='run'?'run':t.st==='ok'?'ok':t.st==='err'?'err':'';
+    const ic  = t.st==='run'?'●':t.st==='ok'?'✓':t.st==='err'?'✕':'○';
+    return `<div class="task ${cls}"><span class="st">${ic}</span><span>${t.label}</span></div>`;
+  }).join('');
+}
+
+async function generate(){
+  show('build'); TASKS.length=0; $('builderr').innerHTML='';
+  const tCore = task('Working out your calories and week');
+  paintTasks();
+
+  try{
+    tCore.st='run'; paintTasks();
+    PLAN.core = await ask(SYS, `${PROFILE()}
+
+Return JSON:
+{"headline":"49 → 55 KG",           // 3-5 words, uppercase, the goal in a phrase
+ "kcal":2300, "protein":"110-120 g", "fat":"75-85 g", "carbs":"~260 g",
+ "stats":["3x lifting","2x running","priority: legs & glutes"],   // 2-4 short chips
+ "week":[{"d":"Mon","short":"Lift A","type":"lift","code":"A","title":"Lift A — Legs","sub":"Squat focus · 45-60 min"}, ...exactly 7, Mon-Sun; type is "lift"|"cardio"|"rest"; code only on lift days],
+ "trainNote":"one sentence on progression",
+ "foodNote":"one sentence — the single most important eating rule for THIS person",
+ "targets":[{"key":"hip","label":"Hip","unit":"cm","start":90,"goal":97,"budget":false}, ...],  // only metrics you have a start value for; "budget":true for waist (a ceiling, not a goal); [] if no measurements given
+ "coach":["...","...","..."]}      // 2-4 blunt, specific notes. Include any safety concern. No filler.
+
+Their non-lifting activities must appear in the week. Respect their available days exactly.`);
+    tCore.st='ok';
+
+    const codes = [...new Set(PLAN.core.week.filter(d=>d.code).map(d=>d.code))];
+    const venues = [];
+    if((A.where||[]).some(w=>w.includes('gym'))) venues.push('gym');
+    if((A.where||[]).some(w=>w.includes('home'))) venues.push('home');
+    if(!venues.length) venues.push('gym');
+
+    const wTasks = codes.map(c=>task(`Writing session ${c}`));
+    const mTasks = [task('Planning food, Mon–Thu'), task('Planning food, Fri–Sun'), task('Building your shopping list')];
+    paintTasks();
+
+    for(let i=0;i<codes.length;i++){
+      const c = codes[i], meta = PLAN.core.week.find(d=>d.code===c);
+      wTasks[i].st='run'; paintTasks();
+      PLAN.workouts[c] = await ask(SYS, `${PROFILE()}
+
+Write session "${c}" — ${meta.title}. ${meta.sub}
+Versions needed: ${venues.join(' and ')}. Home version must use ONLY their listed equipment; drive progression through tempo, range of motion, unilateral work and pauses.
+
+Return JSON:
+{"name":"Legs — quad focus","sub":"Squat is the main lift",
+ ${venues.map(v=>`"${v}":[["Exercise name","4 x 6-8","short coaching cue",1], ...5-8 exercises]`).join(',\n ')}}
+Last value 1 = the one key lift of the session (exactly one per version), else 0. Cue max 12 words. Fit their session length.`);
+      wTasks[i].st='ok'; paintTasks();
+    }
+
+    const days = PLAN.core.week.map(d=>d.d);
+    for(const [gi,grp] of [[0,days.slice(0,4)],[1,days.slice(4)]]){
+      mTasks[gi].st='run'; paintTasks();
+      const part = await ask(SYS, `${PROFILE()}
+
+Daily target: ${PLAN.core.kcal} kcal, ${PLAN.core.protein} protein.
+Write food for these days: ${grp.join(', ')}.
+Week context: ${PLAN.core.week.map(d=>d.d+'='+d.short).join(', ')} — put more carbs on lifting days.
+${A.kitchen&&A.kitchen.fixed?`They eat this EVERY day, build around it: ${A.kitchen.fixed}`:''}
+Real products from their country. Give amounts in grams/ml.
+
+Return JSON: {"Mon":{"kcal":2340,"p":121,"meals":[["Breakfast","60 g oats in 250 ml whole milk, 1 tbsp peanut butter, banana","620 kcal · 23 g",0], ...4-5 meals]}, ...}
+Last value 1 = highlight this row (their daily fixed item, or the day's most important meal), else 0. Totals must land within 60 kcal of target.`);
+      Object.assign(PLAN.meals, part);
+      mTasks[gi].st='ok'; paintTasks();
+    }
+
+    mTasks[2].st='run'; paintTasks();
+    PLAN.shopping = await ask(SYS, `${PROFILE()}
+
+Here is their week of food:
+${JSON.stringify(PLAN.meals).slice(0,2200)}
+
+Return a one-week shopping list as JSON, grouped, using the names printed on packaging in their country.
+{"Protein":["..."],"Carbs":["..."],"Fats — the aisle that matters":["..."],"Fruit & veg":["..."],"Extras":["..."]}
+Include quantities. Keep to what the week actually needs.`);
+    mTasks[2].st='ok'; paintTasks();
+
+    await persist();
+    renderPlan(); show('plan'); window.scrollTo(0,0);
+
+  }catch(e){
+    TASKS.forEach(t=>{ if(t.st==='run') t.st='err'; }); paintTasks();
+    $('builderr').innerHTML = `<div class="errbox"><b>That didn't come back cleanly.</b><br>
+      ${PLAN.core ? 'Your calories and week are done — the rest stalled.' : 'Nothing came through.'}
+      <div style="margin-top:12px"><button class="cta" onclick="generate()">Try again</button></div></div>`;
+  }
+}
+
+/* ================= QUESTIONNAIRE ================= */
+function renderQ(){
+  const q = Q[qi];
+  $('bar').style.width = (qi/Q.length*100)+'%';
+  $('qcount').textContent = `Question ${qi+1} of ${Q.length}`;
+  $('qtext').textContent = q.q;
+  $('qhelp').textContent = q.help||'';
+  $('qhelp').style.display = q.help?'block':'none';
+  $('skip').classList.toggle('hide', !q.skippable);
+  $('back').style.visibility = qi?'visible':'hidden';
+
+  const b = $('qbody');
+  if(q.type==='single'||q.type==='multi'){
+    const cur = A[q.id] || (q.type==='multi'?[]:null);
+    b.innerHTML = `<div class="opts">${q.options.map(o=>{
+      const on = q.type==='multi' ? cur.includes(o) : cur===o;
+      return `<button class="opt ${q.type==='multi'?'multi':''} ${on?'on':''}" data-o="${o.replace(/"/g,'&quot;')}"><span class="bx"></span><span>${o}</span></button>`;
+    }).join('')}</div>`;
+    b.querySelectorAll('.opt').forEach(el=>el.onclick=()=>{
+      const o = el.dataset.o;
+      if(q.type==='single'){ A[q.id]=o; renderQ(); setTimeout(nextQ,120); }
+      else{
+        const arr = A[q.id]||[];
+        A[q.id] = arr.includes(o) ? arr.filter(x=>x!==o) : [...arr,o];
+        renderQ();
+      }
+    });
+  }
+  else if(q.type==='fields'){
+    const cur = A[q.id]||{};
+    b.innerHTML = `<div class="fields">${q.fields.map(f=>
+      `<div class="fld"><label>${f.l}</label><input type="${f.t}" data-k="${f.k}" placeholder="${f.ph||''}" value="${cur[f.k]??''}"></div>`).join('')}</div>`;
+    b.querySelectorAll('input').forEach(i=>i.oninput=()=>{
+      A[q.id] = A[q.id]||{};
+      if(i.value==='') delete A[q.id][i.dataset.k]; else A[q.id][i.dataset.k]=i.value;
+    });
+  }
+  else{
+    b.innerHTML = `<textarea class="tarea" placeholder="${q.ph||''}">${A[q.id]||''}</textarea>`;
+    b.querySelector('textarea').oninput = e => A[q.id] = e.target.value;
+  }
+}
+function nextQ(){
+  if(qi < Q.length-1){ qi++; renderQ(); window.scrollTo(0,0); }
+  else generate();
+}
+$('next').onclick = nextQ;
+$('back').onclick = ()=>{ if(qi){qi--; renderQ();} };
+$('skip').onclick = ()=>{ delete A[Q[qi].id]; nextQ(); };
+$('go').onclick = ()=>{ show('q'); renderQ(); };
+$('redo').onclick = ()=>{ if(confirm('Start over? Your plan will be replaced.')){ qi=0; show('q'); renderQ(); } };
+
+/* ================= PLAN RENDER ================= */
+function renderPlan(){
+  const c = PLAN.core;
+  $('p-head').textContent = c.headline;
+  $('p-stats').innerHTML = [`<span><b>${c.kcal}</b> kcal/day</span>`,`<span><b>${c.protein}</b> protein</span>`]
+    .concat((c.stats||[]).map(s=>`<span>${s}</span>`)).join('');
+  $('c-train').innerHTML = c.trainNote||'';
+  $('c-food').innerHTML  = c.foodNote||'';
+  $('coach').innerHTML   = (c.coach||[]).map(x=>`<div class="callout">${x}</div>`).join('');
+  $('foot').textContent  = 'Weigh in 3–4 mornings a week. Only the weekly average means anything.';
+
+  const venues = Object.keys(PLAN.workouts[Object.keys(PLAN.workouts)[0]]||{}).filter(k=>k==='gym'||k==='home');
+  $('venue').classList.toggle('hide', venues.length<2);
+  if(!venues.includes(venue)) venue = venues[0]||'gym';
+
+  $('sec-prog').classList.toggle('hide', !(c.targets||[]).length);
+  if((c.targets||[]).length){
+    $('loginputs').innerHTML = c.targets.map(t=>
+      `<input id="in-${t.key}" type="number" step="0.1" placeholder="${t.label} ${t.unit}" aria-label="${t.label}">`
+    ).join('') + `<button id="w-save">Log it</button>`;
+    $('w-save').onclick = saveLog;
+  }
+  $('sec-shop').classList.toggle('hide', !PLAN.shopping);
+  if(PLAN.shopping) $('shop').innerHTML = Object.entries(PLAN.shopping)
+    .map(([k,v])=>`<h4>${k}</h4><ul>${v.map(i=>`<li>${i}</li>`).join('')}</ul>`).join('');
+  $('food-sub').textContent = `7 days · ~${c.kcal} kcal each`;
+
+  renderStrip(); renderToday(); renderWorkouts(); renderMeals(); renderBoard(); renderLog();
+}
+
+function renderStrip(){
+  const today = (new Date().getDay()+6)%7;
+  $('strip').innerHTML = PLAN.core.week.map((d,i)=>
+    `<button class="daycell ${i===sel?'sel':''}" aria-current="${i===today}" data-i="${i}">
+      <span class="dn">${d.d}</span><span class="dt">${d.short}</span><span class="dot ${d.type}"></span></button>`).join('');
+  $('strip').querySelectorAll('.daycell').forEach(b=>b.onclick=()=>{sel=+b.dataset.i; renderStrip(); renderToday(); renderWorkouts(); renderMeals();});
+}
+function renderToday(){
+  const d = PLAN.core.week[sel], m = PLAN.meals[d.d];
+  $('t-title').textContent = d.title;
+  $('t-sub').textContent = d.sub||'';
+  $('t-kcal').textContent = m ? m.kcal.toLocaleString('en-GB')+' kcal' : '—';
+  $('t-prot').textContent = m ? `${m.p} g protein · ${m.meals.length} meals` : '';
+}
+function renderWorkouts(){
+  const codes = Object.keys(PLAN.workouts);
+  $('workouts').innerHTML = codes.map(code=>{
+    const w = PLAN.workouts[code];
+    const list = w[venue] || w.gym || w.home || [];
+    const open = PLAN.core.week[sel].code === code;
+    const rows = list.map((ex,i)=>{
+      const id = code+'-'+venue+'-'+i, done = checks[id];
+      return `<tr class="${done?'done':''}">
+        <td class="chk"><input type="checkbox" data-id="${id}" ${done?'checked':''}></td>
+        <td><b>${ex[0]}</b>${ex[3]?'<span class="keylift">Key lift</span>':''}</td>
+        <td class="reps">${ex[1]}</td><td class="note">${ex[2]||''}</td></tr>`;
+    }).join('');
+    return `<div class="wk ${open?'open':''}">
+      <button class="wkhead"><span class="code">${code}</span>
+        <span><span class="nm">${w.name}</span><br><span class="sub">${w.sub||''}</span></span>
+        <span class="chev">▶</span></button>
+      <div class="wkbody"><table><thead><tr><th></th><th>Exercise</th><th>Sets × reps</th><th>Notes</th></tr></thead>
+        <tbody>${rows}</tbody></table></div></div>`;
+  }).join('');
+  $('workouts').querySelectorAll('.wkhead').forEach(h=>h.onclick=()=>h.parentElement.classList.toggle('open'));
+  $('workouts').querySelectorAll('input').forEach(c=>c.onchange=()=>{
+    checks[c.dataset.id]=c.checked; c.closest('tr').classList.toggle('done',c.checked); put('checks',checks);
+  });
+  $('venue-label').textContent = venue==='gym' ? 'Gym version' : 'Home version';
+}
+function renderMeals(){
+  $('meals').innerHTML = PLAN.core.week.map((d,i)=>{
+    const m = PLAN.meals[d.d]; if(!m) return '';
+    const rows = m.meals.map(x=>`<div class="meal ${x[3]?'key':''}">
+      <span class="when">${x[0]}</span><span class="what">${x[1]}</span><span class="macros">${x[2]}</span></div>`).join('');
+    return `<div class="mday ${i===sel?'open':''}"><button class="mdayhead">
+        <span class="dcode">${d.d}</span><span>${d.type==='lift'?'Training day':d.type==='rest'?'Rest day':'Cardio / yoga'}</span>
+        <span class="tot">${m.kcal.toLocaleString('en-GB')} kcal · ${m.p} g P</span></button>
+      <div class="mbody">${rows}</div></div>`;
+  }).join('');
+  $('meals').querySelectorAll('.mdayhead').forEach(h=>h.onclick=()=>h.parentElement.classList.toggle('open'));
+}
+function renderBoard(){
+  const T = PLAN.core.targets||[]; if(!T.length) return;
+  const last = logs.length?logs[logs.length-1]:{};
+  $('board').innerHTML = T.map(t=>{
+    const now = (last[t.key]!=null) ? last[t.key] : t.start;
+    const total = Math.abs(t.goal-t.start) || 1;
+    const done = Math.max(0, Math.min(total, Math.abs(now-t.start)));
+    let slots=''; const n = Math.min(Math.round(total), 12);
+    for(let i=0;i<n;i++){
+      const fill = Math.max(0, Math.min(1, (done/total)*n - i))*100;
+      slots += `<span class="slot"><i style="width:${fill}%"></i></span>`;
+    }
+    const cap = t.budget
+      ? `<b>${Math.round(done*10)/10} of ${total} ${t.unit}</b> of headroom used`
+      : `<b>${Math.round(done*10)/10} of ${total} ${t.unit}</b> · ${Math.round((total-done)*10)/10} to go`;
+    return `<div class="pm ${t.budget?'budget':''}">
+      <div class="pm-name">${t.label}</div>
+      <div class="pm-row"><span class="pm-now">${now}</span><span class="pm-unit">${t.unit}</span>
+        <span class="pm-goal"><small>${t.budget?'ceiling':'target'}</small>${t.goal}</span></div>
+      <div class="slots">${slots}</div><div class="pm-cap">${cap}</div></div>`;
+  }).join('');
+}
+function saveLog(){
+  const T = PLAN.core.targets||[], e = {};
+  T.forEach(t=>{ const v = parseFloat(($('in-'+t.key)||{}).value); if(!isNaN(v)) e[t.key]=v; });
+  if(!Object.keys(e).length) return;
+  const prev = logs.length?logs[logs.length-1]:{};
+  T.forEach(t=>{ if(e[t.key]==null && prev[t.key]!=null) e[t.key]=prev[t.key]; });
+  e.d = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+  logs.push(e);
+  T.forEach(t=>{ const el=$('in-'+t.key); if(el) el.value=''; });
+  put('logs',logs); renderLog(); renderBoard();
+}
+function renderLog(){
+  const T = PLAN.core.targets||[];
+  if(!logs.length){ $('logout').innerHTML = '<div class="lempty">No entries yet. Measure every 4 weeks — same time of day, muscles relaxed.</div>'; return; }
+  $('logout').innerHTML = logs.map((l,i)=>({l,i})).reverse().map(({l,i})=>{
+    const bits = T.filter(t=>l[t.key]!=null).map(t=>`<b>${l[t.key]}</b> ${t.label.toLowerCase()}`);
+    return `<div class="lrow"><span class="ld">${l.d}</span><span class="lv">${bits.join(' &nbsp;·&nbsp; ')}</span>
+      <button class="del" data-i="${i}">Delete</button></div>`;
+  }).join('');
+  $('logout').querySelectorAll('.del').forEach(b=>b.onclick=()=>{
+    logs.splice(+b.dataset.i,1); put('logs',logs); renderLog(); renderBoard();
+  });
+}
+$('venue').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+  venue=b.dataset.v;
+  $('venue').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed', x===b));
+  renderWorkouts();
+});
+
+/* ================= BOOT ================= */
+(async ()=>{
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session && session.user) await onSignedIn(session.user);
+  else show('auth');
+})();
+</script>

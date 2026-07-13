@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>برنامهٔ شخصی رز — تناسب اندام و تغذیه</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1a1a1a; --muted:#555; --line:#d9ddd9;
+    --brand:#1f6f43; --brand-dark:#134a2c; --brand-soft:#eef6f0;
+    --bg:#f4f6f4; --card:#fff; --gold:#b8860b;
+    --warn:#b23b00; --warn-soft:#fff5ef;
+    --blue:#1256a3; --blue-soft:#eef3fb;
+  }
+  *{box-sizing:border-box}
+  html{font-size:19px; scroll-behavior:smooth}
+  body{margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Vazirmatn",Tahoma,sans-serif; line-height:1.9}
+  .wrap{max-width:820px; margin:0 auto; padding:20px 16px 70px}
+
+  /* header */
+  header.hero{background:linear-gradient(135deg,var(--brand),var(--brand-dark));
+    color:#fff; border-radius:20px; padding:30px 26px; margin-bottom:22px}
+  header.hero h1{margin:0 0 4px; font-size:1.7rem}
+  header.hero .lead{margin:0 0 18px; opacity:.95; font-size:1.05rem}
+  .facts{display:flex; flex-wrap:wrap; gap:8px}
+  .fact{background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.25);
+    border-radius:999px; padding:5px 14px; font-size:.9rem; font-weight:500}
+
+  /* nav */
+  nav.toc{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:22px}
+  nav.toc a{background:var(--card); border:1px solid var(--line); color:var(--brand-dark);
+    text-decoration:none; padding:8px 16px; border-radius:999px; font-size:.92rem; font-weight:700}
+  nav.toc a:hover{background:var(--brand-soft); border-color:var(--brand)}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:18px;
+    padding:24px 24px 26px; margin-bottom:22px}
+  h2.sec{font-size:1.35rem; color:var(--brand-dark); margin:0 0 4px; display:flex; align-items:center; gap:10px}
+  h2.sec .ic{width:38px; height:38px; flex:0 0 auto; background:var(--brand-soft); border-radius:11px;
+    display:inline-flex; align-items:center; justify-content:center; font-size:1.2rem}
+  .sec-sub{color:var(--muted); margin:0 0 18px; font-size:.98rem}
+
+  /* safety box */
+  .safety{background:var(--warn-soft); border:1px solid #f2c9b3; border-inline-start:6px solid var(--warn);
+    border-radius:14px; padding:18px 20px; margin-bottom:22px}
+  .safety h3{margin:0 0 8px; color:var(--warn); font-size:1.1rem}
+  .safety p{margin:0 0 8px}
+  .safety p:last-child{margin:0}
+  .safety ul{margin:8px 0 0; padding-inline-start:22px}
+  .safety li{margin-bottom:6px}
+
+  /* day cards */
+  .day{border:1px solid var(--line); border-radius:14px; margin-bottom:16px; overflow:hidden}
+  .day > summary{list-style:none; cursor:pointer; padding:16px 18px; background:var(--brand-soft);
+    display:flex; align-items:center; justify-content:space-between; gap:12px; font-weight:700; font-size:1.1rem; color:var(--brand-dark)}
+  .day > summary::-webkit-details-marker{display:none}
+  .day > summary .tag{background:var(--brand); color:#fff; font-size:.78rem; font-weight:500;
+    padding:3px 12px; border-radius:999px; white-space:nowrap}
+  .day > summary::after{content:"▾"; margin-inline-start:auto; transition:transform .2s}
+  .day[open] > summary::after{transform:rotate(180deg)}
+  .day .body{padding:6px 18px 18px}
+
+  .block-title{font-weight:700; color:var(--brand-dark); margin:16px 0 8px; font-size:1.02rem;
+    padding-bottom:4px; border-bottom:2px solid var(--brand-soft)}
+  .ex{display:flex; gap:12px; padding:11px 0; border-bottom:1px dashed #e4e8e4}
+  .ex:last-child{border-bottom:none}
+  .ex .n{flex:0 0 auto; width:30px; height:30px; background:var(--brand); color:#fff; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:.9rem}
+  .ex .txt{flex:1}
+  .ex .name{font-weight:700}
+  .ex .sets{color:var(--brand); font-weight:700; font-size:.92rem}
+  .ex .how{color:var(--muted); font-size:.94rem}
+
+  /* meal table */
+  .meal{border:1px solid var(--line); border-radius:14px; margin-bottom:14px; overflow:hidden}
+  .meal summary{list-style:none; cursor:pointer; padding:14px 18px; background:#faf7ef;
+    font-weight:700; color:var(--gold); font-size:1.05rem; display:flex; justify-content:space-between; align-items:center}
+  .meal summary::-webkit-details-marker{display:none}
+  .meal summary::after{content:"▾"; transition:transform .2s}
+  .meal[open] summary::after{transform:rotate(180deg)}
+  .meal .rows{padding:6px 18px 16px}
+  .mrow{display:grid; grid-template-columns:110px 1fr; gap:10px; padding:9px 0; border-bottom:1px dashed #eee}
+  .mrow:last-child{border-bottom:none}
+  .mrow .when{font-weight:700; color:var(--brand-dark)}
+  @media(max-width:520px){ .mrow{grid-template-columns:1fr} .mrow .when{color:var(--gold)} }
+
+  /* shopping */
+  .shop{display:grid; grid-template-columns:1fr 1fr; gap:18px}
+  @media(max-width:600px){ .shop{grid-template-columns:1fr} }
+  .shop h4{margin:0 0 8px; color:var(--brand-dark); font-size:1rem; border-bottom:2px solid var(--brand-soft); padding-bottom:5px}
+  .shop ul{margin:0; padding-inline-start:20px}
+  .shop li{margin-bottom:5px}
+
+  /* checklist */
+  .check label{display:flex; align-items:flex-start; gap:11px; padding:11px 12px; border:1px solid var(--line);
+    border-radius:11px; margin-bottom:9px; cursor:pointer}
+  .check input{width:22px; height:22px; margin-top:3px; accent-color:var(--brand); flex:0 0 auto}
+  .check input:checked ~ span{text-decoration:line-through; color:var(--muted)}
+
+  .tip{background:var(--blue-soft); border:1px solid #cfe0f5; border-radius:12px; padding:14px 16px; margin-top:14px; font-size:.96rem}
+  .tip b{color:var(--blue)}
+
+  footer{text-align:center; color:var(--muted); font-size:.85rem; margin-top:10px; line-height:1.8}
+  .btn-print{display:inline-block; margin-top:12px; background:var(--brand); color:#fff; border:none;
+    padding:12px 24px; border-radius:11px; font-family:inherit; font-size:1rem; font-weight:700; cursor:pointer}
+  @media print{ nav.toc,.btn-print{display:none} .day,.meal{break-inside:avoid} details{open:true} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <h1>سلام رز عزیز 🌿</h1>
+    <p class="lead">این برنامهٔ شخصی شماست — با توجه به شرایط سلامتی، اهداف و سبک زندگی‌تان طراحی شده تا امن، ساده و در خانه یا فضای باز قابل انجام باشد.</p>
+    <div class="facts">
+      <span class="fact">۶۲ سال</span>
+      <span class="fact">۱۶۱ سانتی‌متر · ۵۶ کیلوگرم</span>
+      <span class="fact">هدف: استقلال و تحرک</span>
+      <span class="fact">۳ روز در هفته · ۲۰ تا ۳۰ دقیقه</span>
+      <span class="fact">تمرین با وزن بدن</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <a href="#safety">نکات ایمنی</a>
+    <a href="#train">برنامهٔ تمرین</a>
+    <a href="#food">برنامهٔ غذایی</a>
+    <a href="#shop">فهرست خرید</a>
+    <a href="#track">پیگیری هفتگی</a>
+  </nav>
+
+  <!-- ===================== SAFETY ===================== -->
+  <section class="card" id="safety">
+    <h2 class="sec"><span class="ic">🩺</span> اول از همه: ایمنی شما</h2>
+    <p class="sec-sub">این بخش را حتماً بخوانید — بر پایهٔ پاسخ‌های خودتان نوشته شده است.</p>
+
+    <div class="safety">
+      <h3>⚠️ یک توصیهٔ مهم</h3>
+      <p>شما گفتید که <b>گاهی هنگام فعالیت دچار تپش قلب یا احساس ضعف می‌شوید</b>. این نکته را نباید نادیده گرفت. پیش از افزایش شدت تمرین، خیلی خوب است که یک بار با پزشک خود در میان بگذارید و از سلامت قلب مطمئن شوید — به‌خصوص که داروی فشار خون و کلسترول هم مصرف می‌کنید.</p>
+      <p><b>در حین هر تمرین، اگر دچار درد قفسهٔ سینه، سرگیجه، تنگی نفس شدید یا تپش نامنظم شدید، فوراً بایستید، بنشینید و استراحت کنید.</b> اگر بهتر نشد، با اورژانس تماس بگیرید.</p>
+    </div>
+
+    <div class="block-title">قانون‌های طلایی، مخصوص شرایط شما</div>
+    <ul style="padding-inline-start:22px; margin:0">
+      <li><b>پوکی استخوان:</b> کمر را همیشه صاف نگه دارید. از <b>خم شدن به جلو، دراز و نشست و چرخش‌های ناگهانی کمر</b> پرهیز کنید؛ این حرکات برای ستون فقرات شما خطر دارند. در عوض روی صاف ایستادن و حرکات پشتِ‌راست تمرکز می‌کنیم.</li>
+      <li><b>فشار خون:</b> هنگام تلاش <b>نفس را حبس نکنید</b>. قانون ساده: هنگام فشار آوردن، بازدم (فوت کردن). حرکات را آرام و بدون زور زدن انجام دهید.</li>
+      <li><b>آرتروز و مفاصل:</b> همیشه با ۵ دقیقه گرم‌کردن شروع کنید. اگر مفصلی <b>درد تیز</b> داد متوقف شوید؛ کمی احساس فعالیت طبیعی است، اما درد شدید نه.</li>
+      <li><b>بلند شدن از زمین:</b> چون گفتید این کار برایتان سخت است، در برنامه تمرین ملایمِ آن را گنجانده‌ایم تا کم‌کم راحت‌تر شود — همیشه کنار یک صندلی یا مبل محکم.</li>
+    </ul>
+    <p style="color:var(--muted); font-size:.9rem; margin:16px 0 0">این برنامه راهنمای کلی سلامت است و جای مشاورهٔ پزشک را نمی‌گیرد.</p>
+  </section>
+
+  <!-- ===================== TRAINING ===================== -->
+  <section class="card" id="train">
+    <h2 class="sec"><span class="ic">🏃‍♀️</span> برنامهٔ تمرین هفتگی</h2>
+    <p class="sec-sub">سه جلسهٔ ۲۰ تا ۳۰ دقیقه‌ای، در کنار پیاده‌روی‌های خوبی که همین حالا انجام می‌دهید. روی هر روز بزنید تا باز شود.</p>
+
+    <div class="tip"><b>پیاده‌روی شما عالی است 👏</b> همان ۳ روز، ۴۵ دقیقه پیاده‌روی را ادامه دهید — این بهترین کار برای قلب و استخوان‌های شماست. سه جلسهٔ تمرین زیر را می‌توانید در روزهای دیگر یا بعد از پیاده‌روی انجام دهید.</p></div>
+
+    <!-- DAY 1 -->
+    <details class="day" open>
+      <summary>روز اول — قدرت پاها و تعادل <span class="tag">۲۵ دقیقه</span></summary>
+      <div class="body">
+        <div class="block-title">۱) گرم‌کردن (۵ دقیقه)</div>
+        <div class="ex"><span class="n">۱</span><span class="txt"><span class="name">راه رفتن در جا</span> <span class="sets">۲ دقیقه</span><br><span class="how">آرام، زانوها را کمی بالا بیاورید و دست‌ها را تکان دهید.</span></span></div>
+        <div class="ex"><span class="n">۲</span><span class="txt"><span class="name">چرخش شانه و مچ</span> <span class="sets">۱ دقیقه</span><br><span class="how">شانه‌ها را به عقب بچرخانید، مچ پاها را دایره‌ای حرکت دهید.</span></span></div>
+        <div class="ex"><span class="n">۳</span><span class="txt"><span class="name">باز و بستهٔ آرام دست‌ها</span> <span class="sets">۲ دقیقه</span><br><span class="how">دست‌ها را جلو و بالا ببرید (تا جایی که راحت است) و پایین بیاورید.</span></span></div>
+
+        <div class="block-title">۲) تمرین اصلی</div>
+        <div class="ex"><span class="n">۴</span><span class="txt"><span class="name">بلند شدن از صندلی (اسکوات صندلی)</span> <span class="sets">۲ ست × ۸ تا ۱۰ بار</span><br><span class="how">جلوی صندلی محکم بایستید، آرام بنشینید و بلند شوید. کمر صاف، هنگام بلند شدن فوت کنید. بهترین حرکت برای استقلال شما.</span></span></div>
+        <div class="ex"><span class="n">۵</span><span class="txt"><span class="name">بلند کردن پاشنه (روی نوک پا)</span> <span class="sets">۲ ست × ۱۰ بار</span><br><span class="how">دست روی پشتی صندلی، روی پنجهٔ پا بلند شوید و آرام پایین بیایید. برای استخوان و تعادل.</span></span></div>
+        <div class="ex"><span class="n">۶</span><span class="txt"><span class="name">راه رفتن پهلو به پهلو</span> <span class="sets">۱۰ قدم به هر طرف</span><br><span class="how">کنار دیوار یا اپن آشپزخانه، چند قدم به راست و چند قدم به چپ. تعادل را تقویت می‌کند.</span></span></div>
+        <div class="ex"><span class="n">۷</span><span class="txt"><span class="name">ایستادن روی یک پا</span> <span class="sets">هر پا ۱۰ تا ۲۰ ثانیه</span><br><span class="how">دست روی اپن، وزن را روی یک پا بیندازید. برای پیشگیری از زمین خوردن.</span></span></div>
+
+        <div class="block-title">۳) سرد‌کردن (۴ دقیقه)</div>
+        <div class="ex"><span class="n">۸</span><span class="txt"><span class="name">کشش آرام ساق و ران</span> <span class="sets">هر کدام ۲۰ ثانیه</span><br><span class="how">بدون فشار زیاد، فقط کشش ملایم. نفس آرام.</span></span></div>
+      </div>
+    </details>
+
+    <!-- DAY 2 -->
+    <details class="day">
+      <summary>روز دوم — پشتِ‌راست، بالاتنه و نرمش مفاصل <span class="tag">۲۰ دقیقه</span></summary>
+      <div class="body">
+        <div class="block-title">۱) گرم‌کردن (۵ دقیقه)</div>
+        <div class="ex"><span class="n">۱</span><span class="txt"><span class="name">راه رفتن در جا + چرخش شانه</span> <span class="sets">۳ دقیقه</span><br><span class="how">آرام و راحت تا بدن گرم شود.</span></span></div>
+        <div class="ex"><span class="n">۲</span><span class="txt"><span class="name">نرمش گردن</span> <span class="sets">۲ دقیقه</span><br><span class="how">آرام سر را به راست و چپ بچرخانید و پایین/بالا — بدون حرکت تند.</span></span></div>
+
+        <div class="block-title">۲) تمرین اصلی — همه با کمر صاف</div>
+        <div class="ex"><span class="n">۳</span><span class="txt"><span class="name">شنای دیواری</span> <span class="sets">۲ ست × ۸ بار</span><br><span class="how">رو به دیوار، دست‌ها روی دیوار، آرام به دیوار نزدیک و دور شوید. برای قدرت بازو و سینه — بدون فشار به کمر.</span></span></div>
+        <div class="ex"><span class="n">۴</span><span class="txt"><span class="name">فشردن کتف‌ها به هم</span> <span class="sets">۲ ست × ۱۰ بار</span><br><span class="how">نشسته یا ایستاده، کتف‌ها را به هم نزدیک کنید و نگه دارید. پشت را صاف و قوی نگه می‌دارد (مهم برای پوکی استخوان).</span></span></div>
+        <div class="ex"><span class="n">۵</span><span class="txt"><span class="name">بلند کردن دست‌ها به بالا</span> <span class="sets">۲ ست × ۱۰ بار</span><br><span class="how">نشسته روی صندلی، دست‌ها را از کنار تا بالای سر ببرید (تا جای راحت) و پایین بیاورید.</span></span></div>
+        <div class="ex"><span class="n">۶</span><span class="txt"><span class="name">صاف کردن قامت کنار دیوار</span> <span class="sets">۳ بار × ۱۰ ثانیه</span><br><span class="how">پشت به دیوار، پاشنه، باسن، شانه و سر را به دیوار بچسبانید و صاف بایستید. قامت شما را بهتر می‌کند.</span></span></div>
+
+        <div class="block-title">۳) سرد‌کردن (۳ دقیقه)</div>
+        <div class="ex"><span class="n">۷</span><span class="txt"><span class="name">کشش ملایم بازو و سینه</span> <span class="sets">هر کدام ۲۰ ثانیه</span><br><span class="how">نفس عمیق و آرام بکشید.</span></span></div>
+      </div>
+    </details>
+
+    <!-- DAY 3 -->
+    <details class="day">
+      <summary>روز سوم — کارهای روزمره و بلند شدن از زمین <span class="tag">۲۵ دقیقه</span></summary>
+      <div class="body">
+        <div class="block-title">۱) گرم‌کردن (۵ دقیقه)</div>
+        <div class="ex"><span class="n">۱</span><span class="txt"><span class="name">راه رفتن در جا و نرمش مچ و زانو</span> <span class="sets">۵ دقیقه</span></span></div>
+
+        <div class="block-title">۲) تمرین اصلی — قدرت کاربردی</div>
+        <div class="ex"><span class="n">۲</span><span class="txt"><span class="name">بالا رفتن از یک پله</span> <span class="sets">۲ ست × ۸ بار هر پا</span><br><span class="how">کنار نرده یا دیوار، روی یک پله بروید و پایین بیایید. برای قدرت پا و پله‌های خانه.</span></span></div>
+        <div class="ex"><span class="n">۳</span><span class="txt"><span class="name">حمل کیسه (تمرین خرید)</span> <span class="sets">۲ ست × راه رفتن ۱ دقیقه</span><br><span class="how">یک کیسهٔ سبک (مثلاً یک بطری آب) در هر دست، صاف بایستید و راه بروید. برای حمل خرید.</span></span></div>
+        <div class="ex"><span class="n">۴</span><span class="txt"><span class="name">تمرین بلند شدن از زمین (مرحله‌به‌مرحله)</span> <span class="sets">۲ تا ۳ بار، با احتیاط</span><br><span class="how">کنار یک مبل محکم: از حالت نشسته روی صندلی → زانو زدن کنار مبل → دست گرفتن به مبل و بلند شدن. آرام و فقط تا جایی که راحت‌اید. این تمرین اعتمادبه‌نفس و استقلال شما را زیاد می‌کند.</span></span></div>
+        <div class="ex"><span class="n">۵</span><span class="txt"><span class="name">ایستادن روی یک پا + رساندن دست</span> <span class="sets">هر پا ۳ بار</span><br><span class="how">دست روی اپن، روی یک پا بایستید و با دست دیگر جلو را لمس کنید. تعادل پیشرفته.</span></span></div>
+
+        <div class="block-title">۳) سرد‌کردن (۴ دقیقه)</div>
+        <div class="ex"><span class="n">۶</span><span class="txt"><span class="name">کشش آرام کل بدن و نفس عمیق</span> <span class="sets">۴ دقیقه</span></span></div>
+      </div>
+    </details>
+
+    <div class="tip"><b>چطور بفهمم شدت درست است؟</b> باید بتوانید هنگام تمرین صحبت کنید اما نه آواز بخوانید. اگر نفس‌نفس زدید، آرام‌تر کنید. هر هفته می‌توانید یکی دو تکرار بیشتر اضافه کنید — بدون عجله.</div>
+  </section>
+
+  <!-- ===================== FOOD ===================== -->
+  <section class="card" id="food">
+    <h2 class="sec"><span class="ic">🥗</span> برنامهٔ غذایی یک هفته</h2>
+    <p class="sec-sub">دوستدار قلب (کم‌نمک) و دوستدار استخوان (پُر کلسیم و پروتئین) — با غذاهای آشنای ایرانی. چون خودتان آشپزی می‌کنید، همه ساده و در دسترس‌اند.</p>
+
+    <div class="tip"><b>سه ستون این برنامه:</b> <b style="color:var(--blue)">پروتئین</b> در هر وعده (برای عضله و استخوان)، <b style="color:var(--blue)">کلسیم</b> کافی (لبنیات، کنجد، سبزی)، و <b style="color:var(--blue)">نمک کم</b> (برای فشار خون). مکمل کلسیم و ویتامین D خود را طبق نظر پزشک ادامه دهید.</div>
+
+    <details class="meal" open>
+      <summary>شنبه</summary>
+      <div class="rows">
+        <div class="mrow"><span class="when">صبحانه</span><span>نان سبوس‌دار + پنیر کم‌نمک + گردو + یک لیوان شیر کم‌چرب + خرما</span></div>
+        <div class="mrow"><span class="when">میان‌وعده</span><span>یک عدد سیب + چند عدد بادام</span></div>
+        <div class="mrow"><span class="when">ناهار</span><span>خوراک مرغ با سبزیجات + برنج قهوه‌ای (نصف بشقاب) + ماست</span></div>
+        <div class="mrow"><span class="when">شام</span><span>سوپ عدس و جو + نان سبوس‌دار + سالاد با روغن زیتون</span></div>
+      </div>
+    </details>
+
+    <details class="meal">
+      <summary>یکشنبه</summary>
+      <div class="rows">
+        <div class="mrow"><span class="when">صبحانه</span><span>املت دو تخم‌مرغ با گوجه (روغن زیتون) + نان سبوس‌دار</span></div>
+        <div class="mrow"><span class="when">میان‌وعده</span><span>ماست + کمی عسل و کنجد</span></div>
+        <div class="mrow"><span class="when">ناهار</span><span>ماهی سفید کبابی + سبزیجات بخارپز + برنج (کم)</span></div>
+        <div class="mrow"><span class="when">شام</span><span>خوراک لوبیا + سالاد شیرازی کم‌نمک</span></div>
+      </div>
+    </details>
+
+    <details class="meal">
+      <summary>دوشنبه</summary>
+      <div class="rows">
+        <div class="mrow"><span class="when">صبحانه</span><span>فرنی یا حریره با شیر + دارچین + گردو</span></div>
+        <div class="mrow"><span class="when">میان‌وعده</span><span>یک عدد پرتقال</span></div>
+        <div class="mrow"><span class="when">ناهار</span><span>عدس‌پلو با کشمش و مرغ + ماست موسیر کم‌چرب</span></div>
+        <div class="mrow"><span class="when">شام</span><span>کوکوی سبزی (کم‌روغن، فر) + پنیر + خیار و گوجه</span></div>
+      </div>
+    </details>
+
+    <details class="meal">
+      <summary>سه‌شنبه</summary>
+      <div class="rows">
+        <div class="mrow"><span class="when">صبحانه</span><span>نان + پنیر + سبزی‌خوردن + یک لیوان شیر</span></div>
+        <div class="mrow"><span class="when">میان‌وعده</span><span>یک مشت توت‌خشک یا انجیر خشک + بادام</span></div>
+        <div class="mrow"><span class="when">ناهار</span><span>خوراک بوقلمون یا مرغ + کینوا یا برنج قهوه‌ای + سالاد</span></div>
+        <div class="mrow"><span class="when">شام</span><span>آش جو کم‌نمک + ماست</span></div>
+      </div>
+    </details>
+
+    <details class="meal">
+      <summary>چهارشنبه</summary>
+      <div class="rows">
+        <div class="mrow"><span class="when">صبحانه</span><span>تخم‌مرغ آب‌پز + نان سبوس‌دار + گوجه + شیر</span></div>
+        <div class="mrow"><span class="when">میان‌وعده</span><span>ماست + میوهٔ فصل</span></div>
+        <div class="mrow"><span class="when">ناهار</span><span>ماهی قزل‌آلا در فر + سیب‌زمینی و سبزیجات + سالاد</span></div>
+        <div class="mrow"><span class="when">شام</span><span>سوپ مرغ و سبزیجات + نان سبوس‌دار</span></div>
+      </div>
+    </details>
+
+    <details class="meal">
+      <summary>پنجشنبه</summary>
+      <div class="rows">
+        <div class="mrow"><span class="when">صبحانه</span><span>نان + کره بادام‌زمینی یا ارده و شیره + شیر</span></div>
+        <div class="mrow"><span class="when">میان‌وعده</span><span>یک عدد موز + چند عدد گردو</span></div>
+        <div class="mrow"><span class="when">ناهار</span><span>خوراک نخود و گوشت کم‌چرب (آبگوشت سبک) + سبزی</span></div>
+        <div class="mrow"><span class="when">شام</span><span>سالاد مرغ + پنیر + نان سبوس‌دار</span></div>
+      </div>
+    </details>
+
+    <details class="meal">
+      <summary>جمعه</summary>
+      <div class="rows">
+        <div class="mrow"><span class="when">صبحانه</span><span>حلیم کم‌چرب یا شیر و جو دوسر + خرما و گردو</span></div>
+        <div class="mrow"><span class="when">میان‌وعده</span><span>ماست + کمی میوه</span></div>
+        <div class="mrow"><span class="when">ناهار</span><span>مرغ یا ماهی + برنج قهوه‌ای + خورش سبزیجات کم‌روغن</span></div>
+        <div class="mrow"><span class="when">شام</span><span>سبک: پنیر، گردو، سبزی و یک تکه نان + یک لیوان شیر گرم</span></div>
+      </div>
+    </details>
+
+    <div class="tip"><b>نوشیدنی:</b> ۶ تا ۸ لیوان آب در روز عالی است (شما همین حالا خوب می‌نوشید). چای کم‌رنگ اشکالی ندارد؛ نمک و غذای شور و کنسروی را کم کنید تا فشار خون بهتر بماند.</div>
+  </section>
+
+  <!-- ===================== SHOPPING ===================== -->
+  <section class="card" id="shop">
+    <h2 class="sec"><span class="ic">🛒</span> فهرست خرید هفتگی</h2>
+    <p class="sec-sub">هر چه برای برنامهٔ بالا لازم دارید، یکجا.</p>
+    <div class="shop">
+      <div>
+        <h4>پروتئین</h4>
+        <ul>
+          <li>مرغ و بوقلمون (سینه)</li>
+          <li>ماهی سفید و قزل‌آلا</li>
+          <li>تخم‌مرغ</li>
+          <li>عدس، لوبیا، نخود</li>
+          <li>گوشت کم‌چرب (کم)</li>
+        </ul>
+        <h4>لبنیات (کلسیم)</h4>
+        <ul>
+          <li>شیر کم‌چرب</li>
+          <li>ماست کم‌چرب</li>
+          <li>پنیر کم‌نمک</li>
+        </ul>
+        <h4>مغزها و دانه‌ها</h4>
+        <ul>
+          <li>گردو، بادام</li>
+          <li>کنجد / ارده</li>
+        </ul>
+      </div>
+      <div>
+        <h4>نان و غلات</h4>
+        <ul>
+          <li>نان سبوس‌دار</li>
+          <li>برنج قهوه‌ای، جو، کینوا</li>
+          <li>جو دوسر</li>
+        </ul>
+        <h4>سبزی و میوه</h4>
+        <ul>
+          <li>سبزیجات فصل (اسفناج، کلم، هویج، گوجه، خیار)</li>
+          <li>سبزی‌خوردن</li>
+          <li>میوهٔ فصل (سیب، پرتقال، موز)</li>
+          <li>خرما، توت خشک، انجیر خشک</li>
+        </ul>
+        <h4>سایر</h4>
+        <ul>
+          <li>روغن زیتون</li>
+          <li>دارچین، ادویه (به‌جای نمک)</li>
+          <li>عسل</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TRACKER ===================== -->
+  <section class="card" id="track">
+    <h2 class="sec"><span class="ic">✅</span> پیگیری این هفته</h2>
+    <p class="sec-sub">هر کار را که انجام دادید علامت بزنید. هدف: پیوستگی، نه کمال.</p>
+    <div class="check">
+      <label><input type="checkbox"><span>پیاده‌روی ۱ (۴۵ دقیقه)</span></label>
+      <label><input type="checkbox"><span>پیاده‌روی ۲ (۴۵ دقیقه)</span></label>
+      <label><input type="checkbox"><span>پیاده‌روی ۳ (۴۵ دقیقه)</span></label>
+      <label><input type="checkbox"><span>تمرین روز اول — قدرت پا و تعادل</span></label>
+      <label><input type="checkbox"><span>تمرین روز دوم — پشت و بالاتنه</span></label>
+      <label><input type="checkbox"><span>تمرین روز سوم — کارهای روزمره</span></label>
+      <label><input type="checkbox"><span>مکمل کلسیم و ویتامین D را مصرف کردم</span></label>
+      <label><input type="checkbox"><span>هر روز ۶ تا ۸ لیوان آب</span></label>
+    </div>
+    <button class="btn-print" onclick="window.print()">🖨️ چاپ یا ذخیرهٔ PDF این برنامه</button>
+  </section>
+
+  <footer>
+    این برنامه به‌صورت اختصاصی برای رز و بر پایهٔ پاسخ‌های پرسشنامه تهیه شده است.<br>
+    راهنمای عمومی سلامت است و جایگزین توصیهٔ پزشک یا فیزیوتراپیست نیست. در صورت بروز هر علامت نگران‌کننده، با پزشک مشورت کنید.
+  </footer>
+
+</div>
+</body>
+</html>
